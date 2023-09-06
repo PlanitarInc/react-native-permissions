@@ -58,6 +58,9 @@
 #if __has_include("RNPermissionHandlerLocationAccuracy.h")
 #import "RNPermissionHandlerLocationAccuracy.h"
 #endif
+#if __has_include("RNPermissionHandlerLocalNetworkPrivacy.h")
+#import "RNPermissionHandlerLocalNetworkPrivacy.h"
+#endif
 
 @implementation RCTConvert(RNPermission)
 
@@ -112,6 +115,9 @@ RCT_ENUM_CONVERTER(RNPermission, (@{
 #endif
 #if __has_include("RNPermissionHandlerPhotoLibraryAddOnly.h")
   [RNPermissionHandlerPhotoLibraryAddOnly handlerUniqueId]: @(RNPermissionPhotoLibraryAddOnly),
+#endif
+#if __has_include("RNPermissionHandlerLocalNetworkPrivacy.h")
+  [RNPermissionHandlerLocalNetworkPrivacy handlerUniqueId]: @(RNPermissionLocalNetworkPrivacy),
 #endif
 }), RNPermissionUnknown, integerValue);
 
@@ -195,13 +201,16 @@ RCT_EXPORT_MODULE();
 #if __has_include("RNPermissionHandlerLocationAccuracy.h")
   [available addObject:[RNPermissionHandlerLocationAccuracy handlerUniqueId]];
 #endif
+#if __has_include("RNPermissionHandlerLocalNetworkPrivacy.h")
+  [available addObject:[RNPermissionHandlerLocalNetworkPrivacy handlerUniqueId]];
+#endif
 
 #if RCT_DEV
   if ([available count] == 0) {
     NSMutableString *message = [NSMutableString new];
 
     [message appendString:@"⚠  No permission handler detected.\n\n"];
-    [message appendString:@"• Check that you are correctly calling setup_permissions in your Podfile.\n"];
+    [message appendString:@"• Check that you added at least one permission handler in your package.json reactNativePermissionsIOS config.\n"];
     [message appendString:@"• Uninstall this app, reinstall your Pods, delete your Xcode DerivedData folder and rebuild it.\n"];
 
     RCTLogError(@"%@", message);
@@ -311,6 +320,11 @@ RCT_EXPORT_MODULE();
       handler = [RNPermissionHandlerPhotoLibraryAddOnly new];
       break;
 #endif
+#if __has_include("RNPermissionHandlerLocalNetworkPrivacy.h")
+    case RNPermissionLocalNetworkPrivacy:
+      handler = [RNPermissionHandlerLocalNetworkPrivacy new];
+      break;
+#endif
     case RNPermissionUnknown:
       break; // RCTConvert prevents this case
   }
@@ -348,7 +362,7 @@ RCT_EXPORT_MODULE();
 
 - (void)unlockHandler:(NSString * _Nonnull)lockId {
   if (_handlers != nil) {
-    [_handlers removeObjectForKey:lockId];
+    [self.handlers removeObjectForKey:lockId];
   }
 }
 

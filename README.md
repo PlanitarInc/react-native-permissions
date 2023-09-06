@@ -26,72 +26,44 @@ $ yarn add react-native-permissions
 
 ### iOS
 
-1. By default, no permissions are setuped. So first, require the `setup` script in your `Podfile`:
+By default no permission handler is linked. To add one, update your `package.json` by adding the permissions used in your app, then run `npx react-native setup-ios-permissions` followed by `pod install` (`reactNativePermissionsIOS.json` is also supported).
 
-```diff
-# with react-native >= 0.72
-- # Resolve react_native_pods.rb with node to allow for hoisting
-- require Pod::Executable.execute_command('node', ['-p',
--   'require.resolve(
--     "react-native/scripts/react_native_pods.rb",
--     {paths: [process.argv[1]]},
--   )', __dir__]).strip
+_📌  Note that these commands must be re-executed each time you update this config, delete the `node_modules` directory or update this library. An useful trick to cover a lot of these cases is running them on `postinstall` and just run `yarn` or `npm install` manually when needed._
 
-+ def node_require(script)
-+   # Resolve script with node to allow for hoisting
-+   require Pod::Executable.execute_command('node', ['-p',
-+     "require.resolve(
-+       '#{script}',
-+       {paths: [process.argv[1]]},
-+     )", __dir__]).strip
-+ end
-
-+ node_require('react-native/scripts/react_native_pods.rb')
-+ node_require('react-native-permissions/scripts/setup.rb')
+```json
+{
+  "reactNativePermissionsIOS": [
+    "AppTrackingTransparency",
+    "BluetoothPeripheral",
+    "Calendars",
+    "Camera",
+    "Contacts",
+    "FaceID",
+    "LocalNetworkPrivacy",
+    "LocationAccuracy",
+    "LocationAlways",
+    "LocationWhenInUse",
+    "MediaLibrary",
+    "Microphone",
+    "Motion",
+    "Notifications",
+    "PhotoLibrary",
+    "PhotoLibraryAddOnly",
+    "Reminders",
+    "Siri",
+    "SpeechRecognition",
+    "StoreKit"
+  ],
+  "devDependencies": {
+    "pod-install": "0.1.38"
+  },
+  "scripts": {
+    "postinstall": "react-native setup-ios-permissions && pod-install"
+  }
+}
 ```
 
-```diff
-# with react-native < 0.72
-require_relative '../node_modules/react-native/scripts/react_native_pods'
-require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
-+ require_relative '../node_modules/react-native-permissions/scripts/setup'
-```
-
-2. Then in the same file, add a `setup_permissions` call with the wanted permissions:
-
-```ruby
-# …
-
-platform :ios, min_ios_version_supported
-prepare_react_native_project!
-
-# ⬇️ uncomment wanted permissions (don't forget to remove the last comma)
-setup_permissions([
-  # 'AppTrackingTransparency',
-  # 'BluetoothPeripheral',
-  # 'Calendars',
-  # 'Camera',
-  # 'Contacts',
-  # 'FaceID',
-  # 'LocationAccuracy',
-  # 'LocationAlways',
-  # 'LocationWhenInUse',
-  # 'MediaLibrary',
-  # 'Microphone',
-  # 'Motion',
-  # 'Notifications',
-  # 'PhotoLibrary',
-  # 'PhotoLibraryAddOnly',
-  # 'Reminders',
-  # 'SpeechRecognition',
-  # 'StoreKit'
-])
-
-# …
-```
-
-3. Then execute `pod install` _(📌  Note that it must be re-executed each time you update this config)_.
-4. Finally, update your `Info.plist` with the wanted permissions usage descriptions:
+Then update your `Info.plist` with wanted permissions usage descriptions:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -114,6 +86,8 @@ setup_permissions([
   <key>NSContactsUsageDescription</key>
   <string>YOUR TEXT</string>
   <key>NSFaceIDUsageDescription</key>
+  <string>YOUR TEXT</string>
+  <key>NSLocalNetworkUsageDescription</key>
   <string>YOUR TEXT</string>
   <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
   <string>YOUR TEXT</string>
@@ -142,6 +116,13 @@ setup_permissions([
   <string>YOUR TEXT</string>
   <key>NSUserTrackingUsageDescription</key>
   <string>YOUR TEXT</string>
+
+  <!-- 🚨 This is required when requesting PERMISSIONS.IOS.LOCAL_NETWORK_PRIVACY 🚨 -->
+
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_lnp._tcp.</string>
+  </array>
 
   <!-- … -->
 
@@ -210,7 +191,7 @@ Open the project solution file from the `windows` folder. In the app project ope
 
 ## 🆘 Manual linking
 
-Because this package targets recent React Native versions, you probably don't need to link it manually. But if you have a special case, follow these additional instructions:
+Because this package targets React Native 0.63.0+, you probably won't need to link it manually. Otherwise if it's not the case, follow these additional instructions. You also need to manual link the module on Windows when using React Native Windows prior to 0.63:
 
 <details>
   <summary><b>👀 See manual linking instructions</b></summary>
@@ -506,6 +487,7 @@ PERMISSIONS.IOS.CALENDARS;
 PERMISSIONS.IOS.CAMERA;
 PERMISSIONS.IOS.CONTACTS;
 PERMISSIONS.IOS.FACE_ID;
+PERMISSIONS.IOS.LOCAL_NETWORK_PRIVACY;
 PERMISSIONS.IOS.LOCATION_ALWAYS;
 PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
 PERMISSIONS.IOS.MEDIA_LIBRARY;
@@ -736,7 +718,7 @@ check(PERMISSIONS.IOS.LOCATION_ALWAYS)
 
 Request one permission.
 
-The `rationale` is only available and used on Android. It can be a native alert (a `Rationale` object) or a custom implementation (that resolves with a `boolean`).
+Note that the `rationale` parameter is only available and used on Android.
 
 ```ts
 type Rationale = {
@@ -747,10 +729,7 @@ type Rationale = {
   buttonNeutral?: string;
 };
 
-function request(
-  permission: string,
-  rationale?: Rationale | (() => Promise<boolean>),
-): Promise<PermissionStatus>;
+function request(permission: string, rationale?: Rationale): Promise<PermissionStatus>;
 ```
 
 ```js
