@@ -22,6 +22,11 @@
 
 - (void)requestWithResolver:(void (^ _Nonnull)(RNPermissionStatus))resolve
                    rejecter:(void (^ _Nonnull)(NSError * _Nonnull))reject {
+  if (![RNPermissionsHelper isFlaggedAsRequested:[[self class] handlerUniqueId]]) {
+      [RNPermissionsHelper flagAsRequested:[[self class] handlerUniqueId]];
+      return resolve(RNPermissionStatusNotDetermined);
+  }
+    
   [RNPermissionsHelper flagAsRequested:[[self class] handlerUniqueId]];
 
   LocalNetworkPrivacy *local = [LocalNetworkPrivacy new];

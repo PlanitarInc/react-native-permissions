@@ -30,7 +30,7 @@
     self.service.delegate = self;
     [self.service publish];
 
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:5 repeats:NO block:^(NSTimer * _Nonnull timer) {
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:2 repeats:NO block:^(NSTimer * _Nonnull timer) {
         [self.timer invalidate];
         self.completion(NO);
     }];
