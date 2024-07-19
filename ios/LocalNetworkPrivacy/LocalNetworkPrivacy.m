@@ -12,6 +12,8 @@
 
 @implementation LocalNetworkPrivacy
 
+static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPermissionRequested";
+
 - (instancetype)init {
     if (self = [super init]) {
         self.service = [[NSNetService alloc] initWithDomain:@"local." type:@"_lnp._tcp." name:@"LocalNetworkPrivacy" port:1100];
@@ -26,22 +28,62 @@
 - (void)checkAccessState:(void (^)(BOOL))completion {
     self.completion = completion;
 
-    self.publishing = YES;
-    self.service.delegate = self;
-    [self.service publish];
+    BOOL permissionRequestedBefore = [[NSUserDefaults standardUserDefaults] boolForKey:kLocalNetworkPermissionRequestedKey];
 
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:2 repeats:NO block:^(NSTimer * _Nonnull timer) {
-        [self.timer invalidate];
-        self.completion(NO);
-    }];
+    if (!permissionRequestedBefore) {
+        [self logPermissionStatus];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:kLocalNetworkPermissionRequestedKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+
+        self.publishing = YES;
+        self.service.delegate = self;
+        [self.service publish];
+
+        self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5 repeats:YES block:^(NSTimer * _Nonnull timer) {
+            if (self.publishing) {
+                NSLog(@"Local network permission status: Requesting");
+            } else {
+                [self.timer invalidate];
+                if (self.completion) {
+                    self.completion(self.service.includesPeerToPeer);
+                }
+            }
+        }];
+    } else {
+        self.publishing = YES;
+        self.service.delegate = self;
+        [self.service publish];
+
+        self.timer = [NSTimer scheduledTimerWithTimeInterval:2 repeats:NO block:^(NSTimer * _Nonnull timer) {
+            [self.timer invalidate];
+            if (self.completion) {
+                self.completion(NO);
+            }
+        }];
+    }
 }
 
+- (void)logPermissionStatus {
+    NSLog(@"Local network permission status: Requesting");
+}
 
 #pragma mark - NSNetServiceDelegate
 
 - (void)netServiceDidPublish:(NSNetService *)sender {
+    self.publishing = NO;
     [self.timer invalidate];
-    self.completion(YES);
+    if (self.completion) {
+        self.completion(YES);
+    }
+}
+
+- (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary<NSString *,NSNumber *> *)errorDict {
+    self.publishing = NO;
+    [self.timer invalidate];
+    if (self.completion) {
+        self.completion(NO);
+    }
 }
 
 @end
+
