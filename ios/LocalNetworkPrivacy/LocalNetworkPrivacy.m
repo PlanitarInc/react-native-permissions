@@ -31,9 +31,7 @@ static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPerm
     BOOL permissionRequestedBefore = [[NSUserDefaults standardUserDefaults] boolForKey:kLocalNetworkPermissionRequestedKey];
 
     if (!permissionRequestedBefore) {
-        [self logPermissionStatus];
         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:kLocalNetworkPermissionRequestedKey];
-        [[NSUserDefaults standardUserDefaults] synchronize];
 
         self.publishing = YES;
         self.service.delegate = self;
@@ -43,10 +41,7 @@ static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPerm
             if (self.publishing) {
                 NSLog(@"Local network permission status: Requesting");
             } else {
-                [self.timer invalidate];
-                if (self.completion) {
-                    self.completion(self.service.includesPeerToPeer);
-                }
+                [self completeWithResult:self.service.includesPeerToPeer];
             }
         }];
     } else {
@@ -55,33 +50,29 @@ static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPerm
         [self.service publish];
 
         self.timer = [NSTimer scheduledTimerWithTimeInterval:2 repeats:NO block:^(NSTimer * _Nonnull timer) {
-            [self.timer invalidate];
-            if (self.completion) {
-                self.completion(NO);
-            }
+            [self completeWithResult:NO];
         }];
     }
-}
-
-- (void)logPermissionStatus {
-    NSLog(@"Local network permission status: Requesting");
 }
 
 #pragma mark - NSNetServiceDelegate
 
 - (void)netServiceDidPublish:(NSNetService *)sender {
     self.publishing = NO;
-    [self.timer invalidate];
-    if (self.completion) {
-        self.completion(YES);
-    }
+    [self completeWithResult:YES];
 }
 
 - (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary<NSString *,NSNumber *> *)errorDict {
     self.publishing = NO;
+    [self completeWithResult:NO];
+}
+
+#pragma mark - Private Methods
+
+- (void)completeWithResult:(BOOL)result {
     [self.timer invalidate];
     if (self.completion) {
-        self.completion(NO);
+        self.completion(result);
     }
 }
 
