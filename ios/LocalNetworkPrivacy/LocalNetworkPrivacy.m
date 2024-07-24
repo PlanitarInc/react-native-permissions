@@ -38,9 +38,7 @@ static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPerm
         [self.service publish];
 
         self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5 repeats:YES block:^(NSTimer * _Nonnull timer) {
-            if (self.publishing) {
-                NSLog(@"Local network permission status: Requesting");
-            } else {
+            if (!self.publishing) {
                 [self completeWithResult:self.service.includesPeerToPeer];
             }
         }];
@@ -77,4 +75,3 @@ static NSString * const kLocalNetworkPermissionRequestedKey = @"LocalNetworkPerm
 }
 
 @end
-
