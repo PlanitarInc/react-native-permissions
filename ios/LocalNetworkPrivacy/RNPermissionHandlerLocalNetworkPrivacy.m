@@ -22,18 +22,14 @@
 
 - (void)requestWithResolver:(void (^ _Nonnull)(RNPermissionStatus))resolve
                    rejecter:(void (^ _Nonnull)(NSError * _Nonnull))reject {
-  LocalNetworkPrivacy *local = [LocalNetworkPrivacy new];
   if (![RNPermissionsHelper isFlaggedAsRequested:[[self class] handlerUniqueId]]) {
-      // This will trigger the local network permission native dialog
-      [local checkAccessState:^(BOOL granted) {
-          // Ignoring result for the first time. We just want iOS to initiate the permission request
-      }];
       [RNPermissionsHelper flagAsRequested:[[self class] handlerUniqueId]];
-
-      // We can't get the permission dialog result, therefor returning not determined status
       return resolve(RNPermissionStatusNotDetermined);
   }
+    
+  [RNPermissionsHelper flagAsRequested:[[self class] handlerUniqueId]];
 
+  LocalNetworkPrivacy *local = [LocalNetworkPrivacy new];
   [local checkAccessState:^(BOOL granted) {
       resolve(granted ? RNPermissionStatusAuthorized : RNPermissionStatusDenied);
   }];
