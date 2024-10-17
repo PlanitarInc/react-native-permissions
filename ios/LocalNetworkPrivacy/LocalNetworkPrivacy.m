@@ -36,7 +36,6 @@
     }];
 }
 
-
 #pragma mark - NSNetServiceDelegate
 
 - (void)netServiceDidPublish:(NSNetService *)sender {
